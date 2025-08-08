@@ -42,6 +42,51 @@
             position: absolute;
             top:100px;
         }
+        /* --- Animations & interaction enhancements --- */
+        .square { position: relative; overflow: hidden; cursor: pointer; }
+
+        .player-one, .player-two { 
+            animation: drop-in 300ms cubic-bezier(.2,.9,.25,1.2) both;
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.25);
+        }
+
+        .preview-one::after, .preview-two::after {
+            content: "";
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: scale(0.6);
+            opacity: 0.5;
+            animation: preview-pop 160ms ease-out forwards;
+        }
+        .preview-one::after { background-color: blue; }
+        .preview-two::after { background-color: red; }
+
+        .grid.shake { animation: shake 300ms ease-in-out; }
+        .win { animation: pulse-win 900ms ease-in-out infinite; }
+
+        @keyframes drop-in {
+            0% { transform: translateY(-120px) scale(0.5); filter: brightness(1.1); }
+            70% { transform: translateY(8px) scale(1.03); }
+            100% { transform: translateY(0) scale(1); filter: none; }
+        }
+        @keyframes preview-pop {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+        @keyframes pulse-win {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,0,0.0); }
+            50% { transform: scale(1.12); box-shadow: 0 0 0 6px rgba(255,255,0,0.35); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+        /* --- end enhancements --- */
     </style>
 </head>
 <body>
@@ -181,17 +226,56 @@ function check(){
 
         if(squares[sqr1].classList.contains('player-one')&&squares[sqr2].classList.contains('player-one')&&squares[sqr3].classList.contains('player-one')&&squares[sqr4].classList.contains('player-one')){
             document.querySelector('.head').innerHTML = "PLAYER ONE WINS";
+            squares[sqr1].classList.add('win');
+            squares[sqr2].classList.add('win');
+            squares[sqr3].classList.add('win');
+            squares[sqr4].classList.add('win');
             setTimeout(reset,3000);
         }
         
         if(squares[sqr1].classList.contains('player-two')&&squares[sqr2].classList.contains('player-two')&&squares[sqr3].classList.contains('player-two')&&squares[sqr4].classList.contains('player-two')){
             document.querySelector('.head').innerHTML = "PLAYER TWO WINS";
+            squares[sqr1].classList.add('win');
+            squares[sqr2].classList.add('win');
+            squares[sqr3].classList.add('win');
+            squares[sqr4].classList.add('win');
             setTimeout(reset,3000);
         }
     }
 }
 let squares = document.querySelectorAll('.square');
 let currentPlayer = 'one';
+const grid = document.querySelector('.grid');
+
+function clearPreview(){
+    for(let k=0;k<42;k++){
+        squares[k].classList.remove('preview-one');
+        squares[k].classList.remove('preview-two');
+    }
+}
+
+function findDropIndex(col){
+    for(let r=35+col; r>=col; r-=7){
+        if(squares[r+7].classList.contains('taken') && !squares[r].classList.contains('taken')){
+            return r;
+        }
+    }
+    return null;
+}
+
+for(let i=0;i<42;i++){
+    const col = i % 7;
+    squares[i].addEventListener('mouseenter', ()=>{
+        const target = findDropIndex(col);
+        clearPreview();
+        if(target !== null){
+            squares[target].classList.add(currentPlayer==='one' ? 'preview-one' : 'preview-two');
+        }
+    });
+    squares[i].addEventListener('mouseleave', ()=>{
+        clearPreview();
+    });
+}
 
 
     for(let i=0;i<42;i++){
@@ -203,6 +287,7 @@ let currentPlayer = 'one';
                     currentPlayer = 'two';
                     document.querySelector('.head').innerHTML = "TWO";
                     squares[i].classList.remove('square');
+                    clearPreview();
                 }
                 else{
                     squares[i].classList.add('player-two');
@@ -210,9 +295,14 @@ let currentPlayer = 'one';
                     currentPlayer='one';
                     document.querySelector(".head").innerHTML = "ONE";
                     squares[i].classList.remove('square');
+                    clearPreview();
                 }
             }
-            else{document.querySelector('.head').innerHTML = "WRONG MOVE";}
+            else{
+                document.querySelector('.head').innerHTML = "WRONG MOVE";
+                grid.classList.add('shake');
+                setTimeout(()=>grid.classList.remove('shake'), 400);
+            }
             check();
         }
     }
